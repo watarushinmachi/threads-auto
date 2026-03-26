@@ -280,7 +280,13 @@ def main():
 
     # Agent 1: FETCHER
     fetcher_result = run_fetcher(account)
-    summary = fetcher_result.get("summary", {})
+    if isinstance(fetcher_result, dict):
+        summary = fetcher_result.get("summary", {})
+    else:
+        summary = {}
+    # summaryがdictでない場合のフォールバック
+    if not isinstance(summary, dict):
+        summary = {"post_count": 0, "total_views": 0, "avg_views": 0, "total_likes": 0, "total_replies": 0, "total_reposts": 0}
 
     # Agent 2: ANALYST
     analyst_result = run_analyst(account, fetcher_result)
