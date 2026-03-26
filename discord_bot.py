@@ -12,16 +12,13 @@ import datetime
 import requests as http_requests
 import anthropic
 
-DISCORD_BOT_TOKEN = os.environ.get(
-    "DISCORD_BOT_TOKEN",
-    "MTQ4NjcxOTk2OTU3MDg0ODgxOA.GUGAg2.rnOKO8Tt5AX_rekCFdoYSs01bO7CeiVkSrehtI"
-)
+DISCORD_BOT_TOKEN = os.environ.get("DISCORD_BOT_TOKEN", "")
 
 # Threads API設定
 THREADS_API_BASE = "https://graph.threads.net/v1.0"
 THREADS_TOKENS = {
-    "ponta": os.environ.get("THREADS_PONTA_TOKEN", "THAAM7mVZB0ZCsBBUVRhNFNaeExRVk5KVjNBcFI5cEJEOEVQZAkJXRGdJRGpUV1MwTTh4MzlFZAnRZAaHoxSmd6dWtZAZADBXUHRjXzlFM2xHYXZADbG5LWGd0M0tfN3dWWHAtRGlqeGptS0M4ZATBta1A4LVlIR1R3VlYwMlR5VzRxU1JIWENWSDFBcG45NzZAna05kY0JDRzhrUFZATR2FPSm12LTJJVFNNaGgZD"),
-    "luna": os.environ.get("THREADS_LUNA_TOKEN", "THAAM7mVZB0ZCsBBUVFHM3Y4UGJWRGZA5bk9pclBmN0FxSDl5czJ5Q1lJRzMxX3R5QUc4aTBoQnljWVIyeUlROUxFQWlSeVY0N3NTYWl3VGk4SktZAVFA3dVljdmw1aVVHNmxyNnRmYUdsdEhLb0syMllhSldlTjZAHQ0lSUi1nalZAhZAmd6U1JUZAmx5YXV6d1d3aV9ZAa21YV3JfNmk0dFJTeF9Ibm1qQzMZD"),
+    "ponta": os.environ.get("THREADS_PONTA_TOKEN", ""),
+    "luna": os.environ.get("THREADS_LUNA_TOKEN", ""),
 }
 
 # Discord スレッドID
@@ -83,7 +80,7 @@ def publish_to_threads(account: str, text: str) -> dict:
 # ============================================================
 def regenerate_post(account: str, original_text: str, feedback: str) -> str:
     """フィードバックを元に投稿を再生成"""
-    api_key = os.environ.get("ANTHROPIC_API_KEY", "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")
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
     c = anthropic.Anthropic(api_key=api_key)
 
     if account == "ponta":
