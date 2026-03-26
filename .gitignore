@@ -1,0 +1,10 @@
+.DS_Store
+__pycache__/
+*.pyc
+posts_*.json
+posts_*.txt
+luna_posts_*.json
+luna_posts_*.txt
+luna_buzz_*.txt
+daily_report_*.txt
+.env
