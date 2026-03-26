@@ -10,6 +10,11 @@ import os
 import sys
 import time
 
+# プロジェクトルートをパスに追加（scripts/ から実行されても threads_api をインポートできるように）
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, PROJECT_ROOT)
+os.chdir(PROJECT_ROOT)
+
 def run_fetcher(account):
     """Agent 1: FETCHER - 前日の投稿データ取得"""
     print(f"\n{'='*50}")
