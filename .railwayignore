@@ -1,0 +1,8 @@
+*.pdf
+*.mhtml
+*.csv
+画像/
+ルナ/*.pdf
+ルナ/*.mhtml
+__pycache__/
+.git/
