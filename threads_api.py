@@ -10,6 +10,7 @@ import requests
 import json
 import time
 import os
+import sys
 import datetime
 
 THREADS_API_BASE = "https://graph.threads.net/v1.0"
@@ -124,6 +125,79 @@ def publish_multiple_posts(account_key: str, posts: list, interval_minutes: int 
             time.sleep(wait_seconds)
 
     return results
+
+
+# ============================================================
+# 投稿の削除
+# ============================================================
+def delete_post(account_key: str, post_id: str) -> dict:
+    """投稿を削除する（テスト投稿の後片付け用）"""
+    token = ACCOUNTS[account_key]["token"]
+    url = f"{THREADS_API_BASE}/{post_id}"
+    resp = requests.delete(url, params={"access_token": token})
+    result = resp.json()
+    if result.get("success") is True:
+        print(f"[{ACCOUNTS[account_key]['name']}] 投稿削除成功: {post_id}")
+    else:
+        print(f"[{ACCOUNTS[account_key]['name']}] 投稿削除失敗: {result}")
+    return result
+
+
+# ============================================================
+# 投稿セルフテスト
+# ============================================================
+def test_post(account_key: str, keep: bool = False) -> bool:
+    """
+    投稿が実際に通るかを安全にテストする。
+    1. トークン検証（GET /me）
+    2. テスト投稿を実publish
+    3. 投稿IDが返るか確認
+    4. keep=False なら自動削除（本番アカウントにゴミを残さない）
+
+    戻り値: テスト成功なら True
+    """
+    name = ACCOUNTS[account_key]["name"]
+    token = ACCOUNTS[account_key]["token"]
+
+    print(f"\n{'='*50}")
+    print(f"  投稿セルフテスト - {name}")
+    print(f"{'='*50}")
+
+    # 0. トークンの存在チェック
+    if not token:
+        print(f"❌ トークン未設定: 環境変数 THREADS_{account_key.upper()}_TOKEN を確認してください")
+        return False
+
+    # 1. トークン検証（読み取り専用）
+    print("① トークン検証（GET /me）...")
+    profile = get_user_profile(account_key)
+    if "id" not in profile:
+        print(f"❌ トークン検証失敗: {profile}")
+        return False
+    print(f"✅ 認証OK: @{profile.get('username', '?')}")
+
+    # 2. テスト投稿を公開
+    ts = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    test_text = f"[接続テスト] このメッセージは自動削除されます。{ts}"
+    print(f"② テスト投稿を公開...")
+    result = publish_post(account_key, test_text)
+
+    post_id = result.get("id")
+    if not post_id:
+        print(f"❌ 投稿失敗: {result}")
+        return False
+    print(f"✅ 投稿成功: ID={post_id}")
+
+    # 3. 後片付け
+    if keep:
+        print("③ --keep 指定のため投稿は残します")
+    else:
+        print("③ テスト投稿を削除...")
+        time.sleep(2)
+        delete_post(account_key, post_id)
+
+    print(f"\n🎉 {name}: 投稿テスト成功（投稿経路は正常に動作しています）")
+    return True
 
 
 # ============================================================
@@ -395,6 +469,8 @@ if __name__ == "__main__":
     parser.add_argument("account", choices=["ponta", "luna"], help="対象アカウント")
     parser.add_argument("--profile", action="store_true", help="プロフィール取得")
     parser.add_argument("--post", type=str, default=None, help="テキストを投稿")
+    parser.add_argument("--test-post", action="store_true", help="投稿が通るかセルフテスト（投稿→自動削除）")
+    parser.add_argument("--keep", action="store_true", help="--test-post時にテスト投稿を削除せず残す")
     parser.add_argument("--analyze", action="store_true", help="前日の投稿を分析")
     parser.add_argument("--search", type=str, default=None, help="キーワードで検索")
     parser.add_argument("--daily", action="store_true", help="毎朝の自動ルーティン実行")
@@ -405,6 +481,10 @@ if __name__ == "__main__":
     if args.profile:
         result = get_user_profile(args.account)
         print(json.dumps(result, ensure_ascii=False, indent=2))
+
+    elif args.test_post:
+        ok = test_post(args.account, keep=args.keep)
+        sys.exit(0 if ok else 1)
 
     elif args.post:
         result = publish_post(args.account, args.post)
