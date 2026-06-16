@@ -5,8 +5,10 @@ GitHub Actionsから呼び出される統合スクリプト
 """
 
 import argparse
+import datetime
 import json
 import os
+import re
 import sys
 import time
 
@@ -14,6 +16,17 @@ import time
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, PROJECT_ROOT)
 os.chdir(PROJECT_ROOT)
+
+# --- アカウント別の投稿設定 ---
+JST = datetime.timezone(datetime.timedelta(hours=9))
+PONTA_START_DATE = datetime.date(2026, 6, 17)  # 「副業〇日目」カウントの起点（この日が1日目）
+POSTS_PER_DAY = {"ponta": 3, "luna": 5}
+
+
+def ponta_day_number():
+    """ポンタの「副業〇日目」の日数を返す（JST基準、起点日=1日目）"""
+    today_jst = datetime.datetime.now(JST).date()
+    return max(1, (today_jst - PONTA_START_DATE).days + 1)
 
 def run_fetcher(account):
     """Agent 1: FETCHER - 前日の投稿データ取得"""
@@ -162,11 +175,17 @@ def run_writer(account, analyst_result, researcher_result):
         ensure_ascii=False, indent=2
     )
 
+    num_posts = POSTS_PER_DAY.get(account, 5)
+
     if account == "ponta":
-        char_prompt = """【キャラクター】20代後半・借金120万のFランインキャが、AIだけで「まず月1万円」を作る挑戦中の男。今まさにやってる最中で、まだ大きな成果は出ていない（成功者ぶらない）。口調は等身大・仲間目線で親しみやすい。「〜なんよ」「〜してみた」に柔らかい語尾も混ぜる。煽らない・威圧しない（インフルエンサー臭NG）。絵文字は0〜2個。
+        day_num = ponta_day_number()
+        char_prompt = f"""【キャラクター】20代後半・借金120万のFランインキャが、AIだけで「まず月1万円」を作る挑戦中の男。今まさにやってる最中で、まだ大きな成果は出ていない（成功者ぶらない）。口調は等身大・仲間目線で親しみやすい。「〜なんよ」「〜してみた」に柔らかい語尾も混ぜる。煽らない・威圧しない（インフルエンサー臭NG）。絵文字は0〜2個。
 旗印は「人生逆転」ではなく『まず月1万円』。小さい目標・現在進行形・失敗の開示で共感を取る。
-配分: AI活用術×Claude Code/0→1ノウハウ 3本 + 借金返済リアル/月1万円までの距離 1本 + 自己開示/信念/失敗談 1本
-機能的価値（具体的ノウハウ・手順）を必ず含める。CTAには『同じく0→1で踏ん張ってる人フォローして一緒にやろう』系の横のつながり訴求を混ぜる"""
+【1日3投稿の配分（この順番で出す）】
+- 1本目＝副業日報（進捗報告）。今日が「副業{day_num}日目」。月1万円までの距離・借金状況・今日やったことをリアルに。※冒頭の「副業{day_num}日目」という行はシステムが自動で付けるので、本文には書かない（その続きの本文から書く）
+- 2本目＝AI活用術×Claude Code/0→1ノウハウ（機能的価値・具体的な手順を必ず含める）
+- 3本目＝自己開示/信念/失敗談（ファン化）
+CTAには『同じく0→1で踏ん張ってる人フォローして一緒にやろう』系の横のつながり訴求を混ぜる"""
     else:
         char_prompt = """【キャラクター】恋愛×星座占い。口調は優しく柔らかい。「〜だよ」「〜かも」。絵文字は🌙⭐💫✨💕を1〜3個。
 具体的なアクション入り（「午後3時に彼にLINE送って」等）
@@ -185,7 +204,7 @@ def run_writer(account, analyst_result, researcher_result):
 【競合バズ投稿TOP3】
 {researcher_text[:1500]}
 
-以下のルールで投稿を5本生成してください：
+以下のルールで投稿を{num_posts}本生成してください：
 
 絶対ルール:
 - 500文字以内
@@ -208,12 +227,18 @@ def run_writer(account, analyst_result, researcher_result):
     )
     result = response.content[0].text
 
-    import re
     match = re.search(r'\[[\s\S]*\]', result)
     if match:
         posts = json.loads(match.group())
     else:
         posts = [{"content": result, "technique": "不明"}]
+
+    # ポンタは1本目の冒頭に「副業〇日目」を固定で付与（モデル任せにせず確実に）
+    if account == "ponta" and posts:
+        prefix = f"副業{ponta_day_number()}日目"
+        body = posts[0].get("content", "")
+        if not body.lstrip().startswith(prefix):
+            posts[0]["content"] = f"{prefix}\n\n{body.lstrip()}"
 
     for i, p in enumerate(posts):
         print(f"\n--- 投稿 {i+1} 【{p.get('technique', '')}】---")
@@ -252,8 +277,10 @@ def run_supervisor(account, posts):
         text = p.get("content", "")
         if len(text) > 500:
             issues.append(f"投稿{i+1}: {len(text)}文字（500文字超過）")
+        # ポンタ1本目の固定冒頭「副業〇日目」は仕様なのでNGチェックから除外
+        scan_text = re.sub(r'^副業\d+日目', '', text.lstrip())
         for ng in ng_words:
-            if ng in text:
+            if ng in scan_text:
                 issues.append(f"投稿{i+1}: NGワード「{ng}」を検知")
 
     if issues:
