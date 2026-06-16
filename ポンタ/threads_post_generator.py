@@ -229,7 +229,7 @@ def generate_posts(
     print(f"投稿を{num_posts}件生成中...")
 
     response = client.messages.create(
-        model="claude-sonnet-4-20250514",
+        model="claude-sonnet-4-6",
         max_tokens=8000,
         messages=[{"role": "user", "content": prompt}]
     )

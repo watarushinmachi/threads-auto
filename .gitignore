@@ -8,3 +8,9 @@ luna_posts_*.txt
 luna_buzz_*.txt
 daily_report_*.txt
 .env
+
+# 大きいバイナリ（リモートのclone/push失敗を防ぐ）
+*.pdf
+*.mhtml
+画像/
+*.csv

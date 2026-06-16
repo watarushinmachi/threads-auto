@@ -215,7 +215,7 @@ def generate_daily_batch(target_date=None):
     print(f"{date_str}（{weekday}）のバズ投稿を生成中...")
 
     response = client.messages.create(
-        model="claude-sonnet-4-20250514",
+        model="claude-sonnet-4-6",
         max_tokens=6000,
         messages=[{"role": "user", "content": prompt}]
     )
@@ -260,7 +260,7 @@ def generate_comment_reply(commenter_sign: str, question: str = "明日の恋愛
 """
 
     response = client.messages.create(
-        model="claude-sonnet-4-20250514",
+        model="claude-sonnet-4-6",
         max_tokens=300,
         messages=[{"role": "user", "content": prompt}]
     )
@@ -320,7 +320,7 @@ def generate_weekly_special():
     print("週間特別バズ投稿を生成中...")
 
     response = client.messages.create(
-        model="claude-sonnet-4-20250514",
+        model="claude-sonnet-4-6",
         max_tokens=4000,
         messages=[{"role": "user", "content": prompt}]
     )

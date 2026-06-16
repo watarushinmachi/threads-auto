@@ -76,7 +76,7 @@ def run_analyst(account, fetcher_result):
 
     client = anthropic.Anthropic()
     response = client.messages.create(
-        model="claude-sonnet-4-20250514",
+        model="claude-sonnet-4-6",
         max_tokens=2000,
         messages=[{"role": "user", "content": prompt}]
     )
@@ -94,7 +94,7 @@ def run_researcher(account):
     from threads_api import get_user_profile, search_threads
 
     keywords = {
-        "ponta": ["AI 活用", "借金返済", "Claude Code"],
+        "ponta": ["AI 副業", "副業 月1万", "AI 0から", "Claude Code"],
         "luna": ["星座占い", "恋愛運", "タロット 恋愛"],
     }
 
@@ -163,9 +163,10 @@ def run_writer(account, analyst_result, researcher_result):
     )
 
     if account == "ponta":
-        char_prompt = """【キャラクター】借金120万のFランインキャがAIで人生逆転する男。口調はカジュアルで熱量がある。「〜なんよ」「マジで」。絵文字は最小限（0〜2個）。
-配分: AI活用術×Claude Code 3本 + 借金返済リアル 1本 + 自己開示/信念 1本
-機能的価値（具体的ノウハウ・手順）を必ず含める"""
+        char_prompt = """【キャラクター】20代後半・借金120万のFランインキャが、AIだけで「まず月1万円」を作る挑戦中の男。今まさにやってる最中で、まだ大きな成果は出ていない（成功者ぶらない）。口調は等身大・仲間目線で親しみやすい。「〜なんよ」「〜してみた」に柔らかい語尾も混ぜる。煽らない・威圧しない（インフルエンサー臭NG）。絵文字は0〜2個。
+旗印は「人生逆転」ではなく『まず月1万円』。小さい目標・現在進行形・失敗の開示で共感を取る。
+配分: AI活用術×Claude Code/0→1ノウハウ 3本 + 借金返済リアル/月1万円までの距離 1本 + 自己開示/信念/失敗談 1本
+機能的価値（具体的ノウハウ・手順）を必ず含める。CTAには『同じく0→1で踏ん張ってる人フォローして一緒にやろう』系の横のつながり訴求を混ぜる"""
     else:
         char_prompt = """【キャラクター】恋愛×星座占い。口調は優しく柔らかい。「〜だよ」「〜かも」。絵文字は🌙⭐💫✨💕を1〜3個。
 具体的なアクション入り（「午後3時に彼にLINE送って」等）
@@ -201,7 +202,7 @@ def run_writer(account, analyst_result, researcher_result):
 
     client = anthropic.Anthropic()
     response = client.messages.create(
-        model="claude-sonnet-4-20250514",
+        model="claude-sonnet-4-6",
         max_tokens=4000,
         messages=[{"role": "user", "content": prompt}]
     )

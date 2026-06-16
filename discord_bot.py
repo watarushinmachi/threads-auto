@@ -89,7 +89,7 @@ def regenerate_post(account: str, original_text: str, feedback: str) -> str:
         char_desc = "恋愛×星座占い。口調は優しく柔らかい。「〜だよ」「〜かも」。絵文字は🌙⭐💫✨💕を1〜3個。"
 
     response = c.messages.create(
-        model="claude-sonnet-4-20250514",
+        model="claude-sonnet-4-6",
         max_tokens=1000,
         messages=[{"role": "user", "content": f"""以下の投稿を、フィードバックに基づいて修正してください。
 
