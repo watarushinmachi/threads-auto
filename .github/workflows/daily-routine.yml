@@ -35,7 +35,8 @@ jobs:
         run: python3 scripts/daily_routine.py ponta
 
   luna-routine:
-    if: github.event_name == 'schedule' || github.event.inputs.account == 'both' || github.event.inputs.account == 'luna'
+    # 一時停止中：毎朝の自動実行では動かさない（手動で account=luna / both を選んだ時だけ動く）
+    if: github.event.inputs.account == 'both' || github.event.inputs.account == 'luna'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
