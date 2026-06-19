@@ -28,6 +28,24 @@ def ponta_day_number():
     today_jst = datetime.datetime.now(JST).date()
     return max(1, (today_jst - PONTA_START_DATE).days + 1)
 
+
+# --- ポンタ 物販ドキュメンタリーのストーリー進行 ---
+# 物販商材（アフィリ）が確定したら、転機の「副業〇日目」をセットする。
+# それまでは None のままで、フェーズ1(探索)〜2(停滞)を進める。
+PONTA_TURNING_POINT_DAY = None   # 例: 21（副業21日目に物販商材へ出会う）
+PONTA_PRODUCT = ""               # 物販アフィリ商材名（確定後に記入）
+
+
+def ponta_story_stage(day):
+    """副業〇日目から現在のストーリー段階を返す → (フェーズ名, 指示文)"""
+    if PONTA_TURNING_POINT_DAY and day >= PONTA_TURNING_POINT_DAY:
+        if day == PONTA_TURNING_POINT_DAY:
+            return ("転機", f"物販系のいい商材『{PONTA_PRODUCT}』に出会った日。半信半疑だけど希望が見えた興奮を、なぜそれを選んだかの理由とともに誠実に。")
+        return ("実践", f"物販（{PONTA_PRODUCT}）を実際にやってみる過程。リサーチ→仕入れ→出品→初売上…小さな成果・失敗・学びを一次情報で実況。")
+    if day <= 10:
+        return ("探索", "理想の副業を探して色々リサーチ・試す段階。期待と、現実とのギャップ。物販以外も含め『何が正解か分からない』迷いをリアルに。")
+    return ("停滞", "良い副業がなかなか見つからず空回りする段階。挫折・葛藤・本音。でも諦めない。共感の最大の山場。まだ物販商材には出会っていない。")
+
 def run_fetcher(account):
     """Agent 1: FETCHER - 前日の投稿データ取得"""
     print(f"\n{'='*50}")
@@ -136,21 +154,21 @@ def run_researcher(account):
         return []
 
 
-def run_writer(account, analyst_result, researcher_result):
-    """Agent 4: WRITER - 投稿5本生成"""
+def run_writer(account, analyst_result, researcher_result, fetcher_result=None):
+    """Agent 4: WRITER - 投稿生成（ポンタは物販ドキュメンタリーを日々進める）"""
     print(f"\n{'='*50}")
     print(f"  Agent 4: WRITER（投稿生成）- {account}")
     print(f"{'='*50}")
 
     import anthropic
 
-    # ナレッジ読み込み
+    # ナレッジ読み込み（ポンタ固有を先に置き、トランケートで切れないように）
     knowledge_files = {
         "ponta": [
+            "ポンタ/ナレッジ/01_profile.md", "ポンタ/ナレッジ/09_story-arc.md",
+            "ポンタ/ナレッジ/03_genre.md", "ポンタ/ナレッジ/05_writing.md",
+            "ポンタ/ナレッジ/02_target.md", "ポンタ/ナレッジ/04_domain/物販.md",
             "共通/ナレッジ/05_writing.md", "共通/ナレッジ/07_ng-rules.md", "共通/ナレッジ/buzzwords.md",
-            "ポンタ/ナレッジ/01_profile.md", "ポンタ/ナレッジ/02_target.md", "ポンタ/ナレッジ/03_genre.md",
-            "ポンタ/ナレッジ/05_writing.md", "ポンタ/ナレッジ/04_domain/AI活用術.md",
-            "ポンタ/ナレッジ/04_domain/借金返済ドキュメンタリー.md",
         ],
         "luna": [
             "共通/ナレッジ/05_writing.md", "共通/ナレッジ/07_ng-rules.md", "共通/ナレッジ/buzzwords.md",
@@ -176,16 +194,37 @@ def run_writer(account, analyst_result, researcher_result):
     )
 
     num_posts = POSTS_PER_DAY.get(account, 5)
+    story_context = ""
 
     if account == "ponta":
         day_num = ponta_day_number()
-        char_prompt = f"""【キャラクター】20代後半・借金120万のFランインキャが、AIだけで「まず月1万円」を作る挑戦中の男。今まさにやってる最中で、まだ大きな成果は出ていない（成功者ぶらない）。口調は等身大・仲間目線で親しみやすい。「〜なんよ」「〜してみた」に柔らかい語尾も混ぜる。煽らない・威圧しない（インフルエンサー臭NG）。絵文字は0〜2個。
-旗印は「人生逆転」ではなく『まず月1万円』。小さい目標・現在進行形・失敗の開示で共感を取る。
+        stage, stage_dir = ponta_story_stage(day_num)
+
+        # 前日の投稿を引き継いで「続き」を自然につなげる（同じ話の繰り返しを防ぐ）
+        prev_text = ""
+        if isinstance(fetcher_result, dict):
+            prev = fetcher_result.get("posts", []) or []
+            prev_lines = [p.get("text", "")[:200] for p in prev if p.get("text")]
+            if prev_lines:
+                prev_text = "\n".join(f"- {t}" for t in prev_lines[:5])
+        story_context = f"""
+【ストーリー進行（最重要）】
+- 今日は「副業{day_num}日目」。現在のフェーズ＝『{stage}』
+- 今日の方向性：{stage_dir}
+- ルール：昨日までの話と矛盾させない／同じ内容を繰り返さない／1日1歩だけ進める／段階を飛ばさない（まだ出会っていない物販商材を語らない）
+
+【昨日の投稿（この続きとして自然につなげる。無ければ気にしない）】
+{prev_text or "（データなし）"}
+"""
+
+        char_prompt = f"""【キャラクター】20代後半。借金120万をきっかけに副業を始めた"普通の初心者"。今まさに理想の副業を探して試行錯誤している最中で、まだ大きく稼げていない（成功者ぶらない）。口調は等身大・仲間目線で親しみやすい。「〜なんよ」「〜してみた」に柔らかい語尾も混ぜる。煽らない・威圧しない（インフルエンサー臭NG）。絵文字は0〜2個。
+旗印は「人生逆転」ではなく『まず月1万円』。小さい目標・現在進行形・失敗や停滞の開示で共感を取る。
+※これは「副業初心者が物販にたどり着くドキュメンタリー」。AIやClaude Codeの話はしない。
 【1日3投稿の配分（この順番で出す）】
-- 1本目＝副業日報（進捗報告）。今日が「副業{day_num}日目」。月1万円までの距離・借金状況・今日やったことをリアルに。※冒頭の「副業{day_num}日目」という行はシステムが自動で付けるので、本文には書かない（その続きの本文から書く）
-- 2本目＝AI活用術×Claude Code/0→1ノウハウ（機能的価値・具体的な手順を必ず含める）
-- 3本目＝自己開示/信念/失敗談（ファン化）
-CTAには『同じく0→1で踏ん張ってる人フォローして一緒にやろう』系の横のつながり訴求を混ぜる"""
+- 1本目＝副業日報。今日「副業{day_num}日目」のストーリーを1歩だけ進める。※冒頭の「副業{day_num}日目」という行はシステムが自動付与するので本文には書かず、その続きから書く
+- 2本目＝1本目で触れた今日の出来事の深掘り（調べたこと・試した手順・数字・気づきを具体的に）
+- 3本目＝本音/自己開示/横のつながり（葛藤や決意を正直に＋「一緒にやろう」）
+CTAには『同じく副業0→1で踏ん張ってる人フォローして一緒にやろう』系の横のつながり訴求を混ぜる"""
     else:
         char_prompt = """【キャラクター】恋愛×星座占い。口調は優しく柔らかい。「〜だよ」「〜かも」。絵文字は🌙⭐💫✨💕を1〜3個。
 具体的なアクション入り（「午後3時に彼にLINE送って」等）
@@ -194,9 +233,9 @@ CTAには『同じく0→1で踏ん張ってる人フォローして一緒にや
     prompt = f"""あなたはThreadsアカウントの投稿ライターです。
 
 {char_prompt}
-
+{story_context}
 【ナレッジベース】
-{all_knowledge[:8000]}
+{all_knowledge[:12000]}
 
 【前日の分析結果】
 {analyst_result[:1500]}
@@ -323,7 +362,7 @@ def main():
     researcher_result = run_researcher(account)
 
     # Agent 4: WRITER
-    posts = run_writer(account, analyst_result, researcher_result)
+    posts = run_writer(account, analyst_result, researcher_result, fetcher_result)
 
     # Agent 5: POSTER
     run_poster(account, summary, analyst_result, researcher_result, posts)
