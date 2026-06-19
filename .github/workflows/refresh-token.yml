@@ -1,0 +1,43 @@
+name: Threadsトークン自動更新
+
+on:
+  schedule:
+    - cron: '0 0 1,15 * *'   # 毎月1日と15日（60日の有効期限内に必ず複数回走る）
+  workflow_dispatch:
+
+env:
+  THREADS_PONTA_TOKEN: ${{ secrets.THREADS_PONTA_TOKEN }}
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install requests
+
+      - name: トークンをリフレッシュ
+        id: refresh
+        run: python3 scripts/refresh_token.py
+
+      # ① Railwayの変数を更新（投稿botが使う＝最重要）。RAILWAY_TOKEN(プロジェクトトークン)が必要
+      - name: Railway変数を更新
+        if: ${{ steps.refresh.outputs.token != '' }}
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          if [ -z "$RAILWAY_TOKEN" ]; then echo "RAILWAY_TOKEN未設定のためスキップ"; exit 0; fi
+          npm i -g @railway/cli
+          railway variables --set "THREADS_PONTA_TOKEN=${{ steps.refresh.outputs.token }}" --service threads-auto
+
+      # ② GitHub Actionsのsecretを更新（生成側の分析・継続性用）。GH_PAT(repoスコープ)があれば実行
+      - name: GitHub secretを更新
+        if: ${{ steps.refresh.outputs.token != '' }}
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then echo "GH_PAT未設定のためスキップ"; exit 0; fi
+          gh secret set THREADS_PONTA_TOKEN --body "${{ steps.refresh.outputs.token }}" --repo "${{ github.repository }}"
