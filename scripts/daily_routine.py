@@ -32,8 +32,8 @@ def ponta_day_number():
 # --- ポンタ 物販ドキュメンタリーのストーリー進行 ---
 # 物販商材（アフィリ）が確定したら、転機の「副業〇日目」をセットする。
 # それまでは None のままで、フェーズ1(探索)〜2(停滞)を進める。
-PONTA_TURNING_POINT_DAY = None   # 例: 21（副業21日目に物販商材へ出会う）
-PONTA_PRODUCT = ""               # 物販アフィリ商材名（確定後に記入）
+PONTA_TURNING_POINT_DAY = 14     # 副業14日目（≈2026/6/30）に物販商材『楽得物販』へ出会う転機
+PONTA_PRODUCT = "楽得物販"        # 物販アフィリ商材名（利益情報配信オンラインサロン）
 
 
 def ponta_story_stage(day):
