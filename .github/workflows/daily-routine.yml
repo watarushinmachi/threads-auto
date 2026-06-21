@@ -20,6 +20,9 @@ env:
   THREADS_PONTA_TOKEN: ${{ secrets.THREADS_PONTA_TOKEN }}
   THREADS_LUNA_TOKEN: ${{ secrets.THREADS_LUNA_TOKEN }}
 
+permissions:
+  contents: write   # 学び(10_learnings.md)をリポジトリへ書き戻すため
+
 jobs:
   ponta-routine:
     if: github.event_name == 'schedule' || github.event.inputs.account == 'both' || github.event.inputs.account == 'ponta'
@@ -33,6 +36,18 @@ jobs:
       - run: pip install requests anthropic
       - name: "6エージェント連携実行（ポンタ）"
         run: python3 scripts/daily_routine.py ponta
+      - name: "学びの蓄積をコミット（PDCA）"
+        run: |
+          git config user.name "threads-auto[bot]"
+          git config user.email "actions@github.com"
+          git add ポンタ/ナレッジ/10_learnings.md || true
+          if ! git diff --cached --quiet; then
+            git commit -m "PDCA: 学びを自動更新 [skip ci]"
+            git pull --rebase --autostash origin master || true
+            git push origin HEAD:master
+          else
+            echo "学びの更新なし"
+          fi
 
   luna-routine:
     # 一時停止中：毎朝の自動実行では動かさない（手動で account=luna / both を選んだ時だけ動く）

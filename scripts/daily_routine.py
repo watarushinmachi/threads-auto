@@ -116,6 +116,79 @@ def run_analyst(account, fetcher_result):
     return analysis
 
 
+def run_learnings(account, summary, analyst_result, fetcher_result):
+    """前日の実績＋分析から「学び」を抽出し、ナレッジ(10_learnings.md)に蓄積・整理する（PDCA）"""
+    if account != "ponta":
+        return  # 当面はポンタのみ
+    print(f"\n{'='*50}")
+    print(f"  LEARNINGS（学びの蓄積）- {account}")
+    print(f"{'='*50}")
+
+    path = "ポンタ/ナレッジ/10_learnings.md"
+    try:
+        existing = open(path, "r", encoding="utf-8").read()
+    except Exception:
+        existing = ""
+
+    posts = (fetcher_result or {}).get("posts", []) if isinstance(fetcher_result, dict) else []
+    post_count = (summary or {}).get("post_count", 0) if isinstance(summary, dict) else 0
+    if not posts or post_count == 0:
+        print("実績データがまだ無いのでスキップ（投稿が公開され数字が付いてから蓄積されます）")
+        return
+
+    import anthropic
+    today = datetime.datetime.now(JST).date().isoformat()
+    posts_brief = json.dumps(
+        [{"text": p.get("text", "")[:120], "views": p.get("views", 0), "likes": p.get("like_count", 0),
+          "replies": p.get("reply_count", 0)} for p in posts],
+        ensure_ascii=False, indent=2
+    )
+
+    prompt = f"""あなたはThreads運用の学習担当です。ポンタ（副業→物販ドキュメンタリー、偏差値低め・ぼやき文体）の
+「学びの蓄積ファイル」を、今日の実績をもとに更新します。
+
+【今の蓄積ファイル（これを土台に更新）】
+{existing}
+
+【昨日の実績サマリー】
+{json.dumps(summary, ensure_ascii=False)}
+
+【昨日の各投稿（数字つき）】
+{posts_brief}
+
+【昨日のAI分析】
+{(analyst_result or '')[:1500]}
+
+ルール：
+- ファイル全体を「更新後の完全版」として出力（マークダウン）。見出し構成は維持
+- 各セクションは**簡潔・厳選**（「効いてること」「効かなかった/避けること」「ベスト投稿の傾向メモ」は各最大8項目まで。古い/弱い学びは削ってよい）
+- 実績（表示・いいね・返信の数字）に裏打ちされた"効いた/効かない"だけを残す。憶測の水増し禁止
+- 「日次ログ」セクションに「- {today}：<その日の要点1行>」を末尾に追記
+- 文体や禁止事項そのものは変えない（学び＝何が伸びたかの知見だけ）
+- 説明や前置きは不要。ファイルの中身だけを出力"""
+
+    try:
+        client = anthropic.Anthropic()
+        resp = client.messages.create(
+            model="claude-sonnet-4-6", max_tokens=2000,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        updated = resp.content[0].text.strip()
+        # コードフェンスで囲まれていたら剥がす
+        if updated.startswith("```"):
+            updated = updated.split("```", 2)[1]
+            if updated.startswith("markdown"):
+                updated = updated[len("markdown"):]
+        updated = updated.strip()
+        if updated and "学びの蓄積" in updated:
+            open(path, "w", encoding="utf-8").write(updated + "\n")
+            print(f"✅ 学びを更新（{today}）")
+        else:
+            print("更新内容が不正だったのでスキップ")
+    except Exception as e:
+        print(f"LEARNINGS エラー: {e}")
+
+
 def run_researcher(account):
     """Agent 3: RESEARCHER - 競合バズ投稿リサーチ"""
     print(f"\n{'='*50}")
@@ -166,6 +239,7 @@ def run_writer(account, analyst_result, researcher_result, fetcher_result=None):
     knowledge_files = {
         "ponta": [
             "ポンタ/ナレッジ/01_profile.md", "ポンタ/ナレッジ/09_story-arc.md",
+            "ポンタ/ナレッジ/10_learnings.md",
             "ポンタ/ナレッジ/03_genre.md", "ポンタ/ナレッジ/05_writing.md",
             "ポンタ/ナレッジ/02_target.md", "ポンタ/ナレッジ/04_domain/物販.md",
             "共通/ナレッジ/05_writing.md", "共通/ナレッジ/07_ng-rules.md", "共通/ナレッジ/buzzwords.md",
@@ -384,6 +458,9 @@ def main():
 
     # Agent 2: ANALYST
     analyst_result = run_analyst(account, fetcher_result)
+
+    # LEARNINGS: 学びを蓄積（PDCA）→ この更新をWRITERが読む
+    run_learnings(account, summary, analyst_result, fetcher_result)
 
     # Agent 3: RESEARCHER
     researcher_result = run_researcher(account)
