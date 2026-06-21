@@ -19,7 +19,7 @@ os.chdir(PROJECT_ROOT)
 
 # --- アカウント別の投稿設定 ---
 JST = datetime.timezone(datetime.timedelta(hours=9))
-PONTA_START_DATE = datetime.date(2026, 6, 17)  # 「副業〇日目」カウントの起点（この日が1日目）
+PONTA_START_DATE = datetime.date(2026, 6, 21)  # 「副業〇日目」カウントの起点（この日が1日目）
 POSTS_PER_DAY = {"ponta": 3, "luna": 5}
 
 
