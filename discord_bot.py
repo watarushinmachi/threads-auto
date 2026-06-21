@@ -189,47 +189,60 @@ async def on_ready():
 
 
 @client.event
-async def on_reaction_add(reaction, user):
-    """👍リアクションで投稿を承認"""
-    if user.id != OWNER_ID:
+async def on_raw_reaction_add(payload):
+    """👍リアクションで投稿を承認（raw＝キャッシュ非依存。bot再起動後の古いメッセージでも反応する）"""
+    if payload.user_id != OWNER_ID:
         return
-    if user.bot:
+    emoji = str(payload.emoji)
+    if emoji not in ("👍", "🔄"):
         return
 
-    message = reaction.message
-    channel_id = message.channel.id
-
+    channel_id = payload.channel_id
     # どのアカウントのスレッドか判定
     account = None
     for key, tid in THREAD_IDS.items():
         if channel_id == tid:
             account = key.replace("_posts", "")
             break
-
     if not account:
         return
 
-    # 👍で全承認
-    if str(reaction.emoji) == "👍":
+    print(f"[reaction] {emoji} by {payload.user_id} / account={account} / msg={payload.message_id}")
+
+    # メッセージを取得（キャッシュに無くても fetch する）
+    channel = client.get_channel(channel_id)
+    if channel is None:
+        try:
+            channel = await client.fetch_channel(channel_id)
+        except Exception as e:
+            print(f"channel取得失敗: {e}")
+            return
+    try:
+        message = await channel.fetch_message(payload.message_id)
+    except Exception as e:
+        print(f"message取得失敗: {e}")
+        return
+
+    if emoji == "👍":
         # embedがある場合は個別投稿
         if message.embeds:
             embed = message.embeds[0]
             post_text = embed.description
             if post_text and "投稿" in (embed.title or ""):
-                await message.channel.send(f"⏳ 投稿中... `{post_text[:30]}...`")
+                await channel.send(f"⏳ 投稿中... `{post_text[:30]}...`")
                 result = publish_to_threads(account, post_text)
                 if "id" in result:
-                    await message.channel.send(f"✅ 投稿完了！ ID: {result['id']}")
+                    await channel.send(f"✅ 投稿完了！ ID: {result['id']}")
                 else:
-                    await message.channel.send(f"❌ 投稿失敗: {json.dumps(result, ensure_ascii=False)[:200]}")
+                    await channel.send(f"❌ 投稿失敗: {json.dumps(result, ensure_ascii=False)[:200]}")
+            else:
+                print(f"embedはあるがタイトルに『投稿』が無い: title={embed.title!r}")
 
         # 「全て承認」メッセージの場合
         elif "全て承認する場合" in (message.content or ""):
-            await message.channel.send("⏳ 全投稿を公開中...")
-
-            # 同じスレッド内のembed付きメッセージを探す
+            await channel.send("⏳ 全投稿を公開中...")
             published = 0
-            async for msg in message.channel.history(limit=20):
+            async for msg in channel.history(limit=20):
                 if msg.embeds and msg.author.bot:
                     embed = msg.embeds[0]
                     if "投稿" in (embed.title or "") and embed.description:
@@ -240,14 +253,12 @@ async def on_reaction_add(reaction, user):
                         else:
                             await msg.add_reaction("❌")
                         await asyncio.sleep(5)
-
             name = "ポンタ" if account == "ponta" else "ルナ"
-            await message.channel.send(f"<@{OWNER_ID}> ✅ {name}: {published}件の投稿が完了しました！")
+            await channel.send(f"<@{OWNER_ID}> ✅ {name}: {published}件の投稿が完了しました！")
 
-    # 🔄で全再生成
-    elif str(reaction.emoji) == "🔄":
+    elif emoji == "🔄":
         if "全て再生成" in (message.content or ""):
-            await message.channel.send("🔄 再生成するにはフィードバックをテキストで送ってください\n例：`もっとカジュアルに` `フックをもっと強く`")
+            await channel.send("🔄 再生成するにはフィードバックをテキストで送ってください\n例：`もっとカジュアルに` `フックをもっと強く`")
 
 
 @client.event
