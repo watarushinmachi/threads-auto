@@ -145,18 +145,32 @@ def analyze_and_convert_viral(account: str, source_text: str) -> dict:
     prompt = f"""あなたはThreadsの編集者兼ライターです。「ポンタ」というアカウントを伸ばすのが仕事。
 他人の"伸びている投稿"を題材に、次の順で考えてから投稿案を作ってください。
 
-# ステップ1：なぜ伸びたかを抽象化する
-この投稿が伸びた理由を、2つの観点で分解する（その投稿の表面的な題材ではなく、再現できる"構造"まで抽象化する）。
+# ステップ1：なぜ伸びたかを分解する
+この投稿が伸びた理由を、2つの観点で言語化する。
 - **アルゴリズム観点**：保存・コメント・詳細タップ・滞在時間・プロフィールアクセス等のどれを取りにいけている構造か
-- **人間心理観点**：なぜ人がつい反応するか（共感・自己投影・続きが気になる・ツッコミたくなる・損したくない 等）
+- **人間心理観点**：なぜ人がつい反応するか（共感・自己投影・続きが気になる・ツッコミたくなる・教えてあげたくなる・損したくない 等）
 
-# ステップ2：ポンタのコンセプトへの落とし込みを検討する
-抽象化した"伸びた本質"を、ポンタの世界観に翻訳したらどうなるかを考える。
-ポンタ＝借金100万をきっかけに副業を探し、AI副業で稼げず物販にたどり着くドキュメンタリー。偏差値低め・楽して稼ぎたいのが本音の普通の人。
+# ステップ2：再利用できる"仕掛けのエッセンス"を1つ特定する（最重要）
+バズの肝は、ふわっとした抽象論ではなく、その投稿が"発明した具体的な仕掛け"にあることが多い。
+それを1つ名指しで抜き出す。例：
+- 言い回し・トーンの工夫（例：あえて下手に出て経験者に教えを乞う逆説の依頼）
+- 問いかけの型（例：「◯◯な人、どれがおすすめ？」と経験者に逆質問してコメントを誘う）
+- フォーマット（例：項目＋値で現状を数値化、Before→After、ランキング形式）
+※ただし**元の文言をそのままコピーしない**。"なぜ効くか"というエッセンス（骨組み）だけを取り出す。表現は後でポンタ自身の言葉に作り変える。
 
-# ステップ3：切り口の違う投稿案を3つ作る
-同じ"伸びた本質"を活かしつつ、**アプローチ（切り口）を変えた3案**を作る。3案が似ないようにする
-（例：1案目=失敗の自己開示型／2案目=感情の数値化・項目化型／3案目=ちょっとした気づき・ぼやき型 など、題材や入り方を変える）。
+# ステップ3：ポンタのコンセプトに正しく落とし込む（ズレ厳禁）
+ステップ2のエッセンスを、必ず**ポンタの軸の中**に流し込む。軸から外れた題材に逸れないこと。
+- ポンタの軸＝「楽して稼ぐ手段をずっと探してる副業初心者の、リアルなドキュメンタリー」。借金100万がきっかけ、AI副業で挫折気味、まだ何者でもない、偏差値低め・楽したいのが本音
+- ✅ 軸の中＝「どの稼ぎ方が楽か」「楽して稼ぐ系の手段選び」「やってみたけど挫折」「経験者に手法を聞く」「自分のダメさの開示」
+- ❌ 軸の外（出さない）＝節約・家計簿・貯金術・自己啓発・意識高い系・ノウハウ解説・人生論など、"楽して稼ぐ手段探し"から離れた話題
+- 経験者への逆質問の型なら、ポンタ版は「楽して稼いできた人、どの手法がおすすめ？」のように**ポンタが本当に知りたいこと**を聞く形に翻訳する
+
+# ステップ4：表現を変えた投稿案を3つ作る
+エッセンスは同じでも、**入り方・表現を変えた3案**にする（どれも元投稿のコピーにしない・ポンタの言葉で書く）：
+- **案1＝素直に問いかけ型**：経験者や読者に自然に質問を投げてコメントを誘う
+- **案2＝自己開示＋問いかけ型**：自分のダメさ・現状を晒してから聞く（共感を足す）
+- **案3＝ぼやき・気づき型**：問いかけを弱め、独り言・気づきとして置く
+3案とも必ずポンタの軸の中。3案が似ないようにする。
 
 【ポンタのキャラ・文体・学び（厳守）】
 {style}
@@ -168,22 +182,26 @@ def analyze_and_convert_viral(account: str, source_text: str) -> dict:
 {source_text}
 
 【各投稿案のルール】
-- 丸パクリ禁止。題材ではなく"構造/本質"だけ借り、ポンタの実体験・状況に翻訳する
-- 文体は必ずポンタ（標準語・素人っぽいぼやき・勧誘CTAなし・絵文字0〜1個・難しい分析や計算で賢く見せない）
+- 文体は必ずポンタ（標準語・素人っぽいぼやき・絵文字0〜1個・難しい分析や計算で賢く見せない）
+- 元投稿の"エッセンス"だけ借り、文言はコピーしない。題材・体験は必ずポンタ自身（楽して稼ぐ手段探し）のものに翻訳する
+- ポンタの軸から外れた題材（節約・家計・自己啓発・ノウハウ解説等）に流れない
 - 200〜400字くらい。本文にURL・リンクは入れない
 - 「副業◯日目」のような日数の見出しは付けない（日報ではなく単発投稿）
 - ストーリーの段階を飛ばさない（まだ稼げてない／まだ楽得物販に課金してない前提。稼げた風・商材を語る風はNG）
-- NGワード:「稼げる」「副業」（単語として）「Twitter」「X」
+- 経験者への逆質問/コメント誘発の型なら自然に問いかけて終えてよい（ただし「フォローして」等の勧誘CTAはNG）
+- NGワード:「稼げる」「副業」（単語として）「Twitter」「X」。**他人の言葉の引用の中でも使わない**（例「初心者でも稼げる」はNG → 「初心者でもいける」「初心者向け」等に言い換える）
 
-出力はJSONオブジェクトのみ（説明・前置き・コードフェンス不要）:
+出力はJSONオブジェクトのみ（説明・前置き・コードフェンス不要）。
+**重要：JSONの値の中ではダブルクォート(")を使わない。引用や強調が必要なら「」を使う（JSONが壊れるため）。**
 {{
   "why_viral": {{"algorithm": "アルゴリズム観点の分析（1〜2文）", "psychology": "人間心理観点の分析（1〜2文）"}},
-  "core_factor": "伸びた本質を一言で抽象化",
-  "apply": "それをポンタにどう落とすかの方針（1〜2文）",
+  "device": "再利用するエッセンス（効く理由を骨組みで・元の文言コピーは不可）",
+  "core_factor": "伸びた本質を一言で",
+  "apply": "そのエッセンスをポンタの軸にどう落とすかの方針（1〜2文）",
   "patterns": [
-    {{"approach": "切り口名（短く）", "content": "投稿本文"}},
-    {{"approach": "切り口名（短く）", "content": "投稿本文"}},
-    {{"approach": "切り口名（短く）", "content": "投稿本文"}}
+    {{"approach": "素直に問いかけ型", "content": "投稿本文"}},
+    {{"approach": "自己開示＋問いかけ型", "content": "投稿本文"}},
+    {{"approach": "ぼやき・気づき型", "content": "投稿本文"}}
   ]
 }}"""
     response = c.messages.create(
@@ -192,14 +210,24 @@ def analyze_and_convert_viral(account: str, source_text: str) -> dict:
     )
     raw = response.content[0].text.strip()
     m = re.search(r'\{[\s\S]*\}', raw)
-    if not m:
-        # JSONが取れない時は本文まるごとを1パターンとして返す（壊れ防止）
-        return {"why_viral": {}, "core_factor": "", "apply": "",
-                "patterns": [{"approach": "変換", "content": raw}]}
-    data = json.loads(m.group())
-    if not isinstance(data.get("patterns"), list) or not data["patterns"]:
-        data["patterns"] = [{"approach": "変換", "content": raw}]
-    return data
+    if m:
+        try:
+            data = json.loads(m.group())
+            if isinstance(data.get("patterns"), list) and data["patterns"]:
+                return data
+        except Exception as e:
+            print(f"analyze_and_convert_viral JSON parse失敗、サルベージ: {e}")
+    # JSONが壊れた/取れない時：approach/content ペアを正規表現で救出する
+    pairs = re.findall(
+        r'"approach"\s*:\s*"([^"]*)"\s*,\s*"content"\s*:\s*"((?:[^"\\]|\\.)*)"',
+        raw,
+    )
+    if pairs:
+        patterns = [{"approach": a, "content": c.replace('\\n', '\n').replace('\\"', '"')} for a, c in pairs]
+        return {"why_viral": {}, "device": "", "core_factor": "", "apply": "", "patterns": patterns}
+    # それも無理なら本文まるごとを1案として返す（完全な壊れ防止）
+    return {"why_viral": {}, "device": "", "core_factor": "", "apply": "",
+            "patterns": [{"approach": "変換", "content": raw}]}
 
 
 def regenerate_post(account: str, original_text: str, feedback: str) -> str:
@@ -379,6 +407,8 @@ async def on_message(message):
             analysis_lines.append(f"**📈 アルゴリズム的に**\n{why['algorithm']}")
         if why.get("psychology"):
             analysis_lines.append(f"**🧠 人間心理的に**\n{why['psychology']}")
+        if result.get("device"):
+            analysis_lines.append(f"**🔧 流用する仕掛け**\n{result['device']}")
         if result.get("core_factor"):
             analysis_lines.append(f"**💡 伸びた本質**\n{result['core_factor']}")
         if result.get("apply"):
@@ -405,7 +435,9 @@ async def on_message(message):
                 description=content[:4096],
                 color=0x00ff00,
             )
-            embed.set_footer(text=f"文字数: {len(content)} | 👍で投稿 ❌で却下")
+            ng_hit = [w for w in ("稼げる", "副業", "Twitter") if w in content]
+            warn = f" | ⚠️NG語: {'/'.join(ng_hit)}" if ng_hit else ""
+            embed.set_footer(text=f"文字数: {len(content)} | 👍で投稿 ❌で却下{warn}")
             await message.channel.send(embed=embed)
         return
 
