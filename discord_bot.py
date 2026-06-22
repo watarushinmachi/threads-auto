@@ -123,32 +123,83 @@ def fetch_post_text(url: str) -> str:
     return ""
 
 
-def convert_viral_to_account(account: str, source_text: str) -> str:
-    """他人の伸びてる投稿の"型"を借りて、このアカウントのキャラ・文体に変換する"""
+def _load_algorithm_knowledge() -> str:
+    """アルゴリズム分析の土台になる共通ナレッジを読む"""
+    try:
+        with open("共通/ナレッジ/algorithm.md", "r", encoding="utf-8") as f:
+            return f.read()[:3500]
+    except Exception:
+        return ""
+
+
+def analyze_and_convert_viral(account: str, source_text: str) -> dict:
+    """伸びてる投稿を ①なぜ伸びたか(アルゴリズム+人間心理)で抽象化 →
+    ②ポンタのコンセプトへの落とし込みを検討 → ③切り口の違う3パターンを生成する。
+    返り値: {"why_viral":{"algorithm":..,"psychology":..}, "core_factor":.., "apply":..,
+             "patterns":[{"approach":..,"content":..}, ...]}"""
     api_key = os.environ.get("ANTHROPIC_API_KEY", "")
     c = anthropic.Anthropic(api_key=api_key)
     style = load_account_style(account)
-    prompt = f"""あなたはThreadsアカウント「ポンタ」のライターです。
-他人の"伸びている投稿"を参考に、その型・切り口だけを借りて、ポンタ自身のキャラ・文体・状況に合わせた投稿に書き換えてください。
+    algo = _load_algorithm_knowledge()
+
+    prompt = f"""あなたはThreadsの編集者兼ライターです。「ポンタ」というアカウントを伸ばすのが仕事。
+他人の"伸びている投稿"を題材に、次の順で考えてから投稿案を作ってください。
+
+# ステップ1：なぜ伸びたかを抽象化する
+この投稿が伸びた理由を、2つの観点で分解する（その投稿の表面的な題材ではなく、再現できる"構造"まで抽象化する）。
+- **アルゴリズム観点**：保存・コメント・詳細タップ・滞在時間・プロフィールアクセス等のどれを取りにいけている構造か
+- **人間心理観点**：なぜ人がつい反応するか（共感・自己投影・続きが気になる・ツッコミたくなる・損したくない 等）
+
+# ステップ2：ポンタのコンセプトへの落とし込みを検討する
+抽象化した"伸びた本質"を、ポンタの世界観に翻訳したらどうなるかを考える。
+ポンタ＝借金100万をきっかけに副業を探し、AI副業で稼げず物販にたどり着くドキュメンタリー。偏差値低め・楽して稼ぎたいのが本音の普通の人。
+
+# ステップ3：切り口の違う投稿案を3つ作る
+同じ"伸びた本質"を活かしつつ、**アプローチ（切り口）を変えた3案**を作る。3案が似ないようにする
+（例：1案目=失敗の自己開示型／2案目=感情の数値化・項目化型／3案目=ちょっとした気づき・ぼやき型 など、題材や入り方を変える）。
 
 【ポンタのキャラ・文体・学び（厳守）】
 {style}
 
-【参考にする伸びてる投稿（他人のもの）】
+【アルゴリズムの前提知識（ステップ1の根拠に使う）】
+{algo}
+
+【題材：伸びてる投稿（他人のもの）】
 {source_text}
 
-【ルール】
-- 丸パクリ禁止。型や切り口だけ借り、ポンタの実体験・状況（借金100万・副業を探して物販に向かうドキュメンタリー・偏差値低め・楽して稼ぎたい）に翻訳する
+【各投稿案のルール】
+- 丸パクリ禁止。題材ではなく"構造/本質"だけ借り、ポンタの実体験・状況に翻訳する
 - 文体は必ずポンタ（標準語・素人っぽいぼやき・勧誘CTAなし・絵文字0〜1個・難しい分析や計算で賢く見せない）
 - 200〜400字くらい。本文にURL・リンクは入れない
-- 「副業◯日目」のような日数の見出しは付けない（これは日報ではなく単発の投稿）
+- 「副業◯日目」のような日数の見出しは付けない（日報ではなく単発投稿）
+- ストーリーの段階を飛ばさない（まだ稼げてない／まだ楽得物販に課金してない前提。稼げた風・商材を語る風はNG）
 - NGワード:「稼げる」「副業」（単語として）「Twitter」「X」
-- 投稿本文のみ出力（説明・前置き不要）"""
+
+出力はJSONオブジェクトのみ（説明・前置き・コードフェンス不要）:
+{{
+  "why_viral": {{"algorithm": "アルゴリズム観点の分析（1〜2文）", "psychology": "人間心理観点の分析（1〜2文）"}},
+  "core_factor": "伸びた本質を一言で抽象化",
+  "apply": "それをポンタにどう落とすかの方針（1〜2文）",
+  "patterns": [
+    {{"approach": "切り口名（短く）", "content": "投稿本文"}},
+    {{"approach": "切り口名（短く）", "content": "投稿本文"}},
+    {{"approach": "切り口名（短く）", "content": "投稿本文"}}
+  ]
+}}"""
     response = c.messages.create(
-        model="claude-sonnet-4-6", max_tokens=800,
+        model="claude-sonnet-4-6", max_tokens=2500,
         messages=[{"role": "user", "content": prompt}],
     )
-    return response.content[0].text.strip()
+    raw = response.content[0].text.strip()
+    m = re.search(r'\{[\s\S]*\}', raw)
+    if not m:
+        # JSONが取れない時は本文まるごとを1パターンとして返す（壊れ防止）
+        return {"why_viral": {}, "core_factor": "", "apply": "",
+                "patterns": [{"approach": "変換", "content": raw}]}
+    data = json.loads(m.group())
+    if not isinstance(data.get("patterns"), list) or not data["patterns"]:
+        data["patterns"] = [{"approach": "変換", "content": raw}]
+    return data
 
 
 def regenerate_post(account: str, original_text: str, feedback: str) -> str:
@@ -313,23 +364,49 @@ async def on_message(message):
             return
 
     if source_text:
-        await message.channel.send("✨ 伸びてる投稿をポンタ風に変換中...")
+        await message.channel.send("🔍 伸びてる理由を分解 → ポンタに落とし込み → 3案を作成中...")
         try:
-            converted = convert_viral_to_account(account, source_text)
+            result = analyze_and_convert_viral(account, source_text)
         except Exception as e:
             await message.channel.send(f"❌ 変換に失敗しました: {str(e)[:150]}")
             return
         name = "ポンタ" if account == "ponta" else "ルナ"
-        embed = discord.Embed(
-            title="🆕 変換: 投稿案",
-            description=converted[:4096],
-            color=0x00ff00,
+
+        # 1) なぜ伸びたかの分解レポート（このembedは投稿対象ではない＝タイトルに「投稿」を入れない）
+        why = result.get("why_viral", {}) or {}
+        analysis_lines = []
+        if why.get("algorithm"):
+            analysis_lines.append(f"**📈 アルゴリズム的に**\n{why['algorithm']}")
+        if why.get("psychology"):
+            analysis_lines.append(f"**🧠 人間心理的に**\n{why['psychology']}")
+        if result.get("core_factor"):
+            analysis_lines.append(f"**💡 伸びた本質**\n{result['core_factor']}")
+        if result.get("apply"):
+            analysis_lines.append(f"**🎯 ポンタへの落とし込み**\n{result['apply']}")
+        analysis_embed = discord.Embed(
+            title="🔍 伸びてる理由の分解",
+            description=("\n\n".join(analysis_lines) or "（分析を取得できませんでした）")[:4096],
+            color=0x5865F2,
         )
-        embed.set_footer(text=f"文字数: {len(converted)} | 👍で投稿 ❌で却下")
+        analysis_embed.set_footer(text=f"参考元: {source_text[:100]}")
         await message.channel.send(
-            f"<@{OWNER_ID}> 伸びてる投稿を{name}風に変換しました！\n>>> 参考元: {source_text[:120]}",
-            embed=embed,
+            f"<@{OWNER_ID}> 伸びてる投稿を分解して、{name}用に3案つくりました。良いと思った案に👍で投稿できます。",
+            embed=analysis_embed,
         )
+
+        # 2) 3パターンの投稿案（タイトルに「投稿」を含めると既存の👍ハンドラがそのまま公開してくれる）
+        for i, p in enumerate(result.get("patterns", [])[:3], 1):
+            content = (p.get("content") or "").strip()
+            if not content:
+                continue
+            approach = p.get("approach", "")
+            embed = discord.Embed(
+                title=f"🆕 投稿案{i}｜{approach}",
+                description=content[:4096],
+                color=0x00ff00,
+            )
+            embed.set_footer(text=f"文字数: {len(content)} | 👍で投稿 ❌で却下")
+            await message.channel.send(embed=embed)
         return
 
     # 直近のembed付き投稿を探してFBとして再生成
