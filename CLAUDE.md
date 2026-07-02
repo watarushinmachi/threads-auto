@@ -99,3 +99,13 @@ python3 ルナ/luna_post_generator.py --daily --date 2026-03-27
 - Anthropic API Key: 環境変数 ANTHROPIC_API_KEY（~/.zshrc）
 - Discord Bot Token: 環境変数 DISCORD_BOT_TOKEN（~/.zshrc）
 - Threads API Token: 環境変数 THREADS_PONTA_TOKEN / THREADS_LUNA_TOKEN（~/.zshrc）
+
+## 3周年イベント（8/22(土) 東京・高田馬場・2,000人規模）
+
+**フル議事録・ネクストアクション → `共通/ミーティング/2026-07-02_3周年定例MTG.md`**
+（3周年・イベント・集客・特典・ウェビナー連携について聞かれたら、まずこのファイルを読むこと）
+
+- **告知スライド（HTML 3パターン）→ `slides/shift-ai-3rd-anniversary/`**（index.htmlから比較。要差替：◯次募集/締切/特典/申込QR）
+- 集客の基本方針（西田さん指摘）：①集客はファネルで設計（ターゲット×タイミング×施策）②数値で仮説検証（LP/開封/登録率/参加率）③施策連携（ウェビナー/フロント/特典/月刊/YouTubeライブ）
+- 直近の勝負は7月頭〜中旬。お盆前に決着、地方の人から先に確保。
+- 主要期限：7/3フロント連携MTG（具体案持参）／7/4月刊ウィーク2／7/8 YouTubeライブ1回目／8/1ごろ2回目（前倒し検討）／8/22本番。
